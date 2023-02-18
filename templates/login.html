@@ -2,6 +2,11 @@
 {% if login_successful == True %}
 <p>Login successful</p>
 <a href="/">Return to homepage</a>
+<script type="text/javascript">
+    $(document).ready(function(){
+        window.location.href='/';
+    });
+</script>
 {% else %}
 <form action="/login" method="POST">
     <p>

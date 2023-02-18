@@ -1,51 +1,64 @@
 {% extends 'template.html' %} {% block content %}
 <h3>DCTRL FOB Management</h3>
 <div>
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Fob ID</th>
-            <th>Expire Timestamp</th>
-            <th>Expired</th>
-        </tr>
-        {% for fob in fobs %}
-        <tr>
-            <td>{{ fob.name }}</td>
-            <td>{{ fob.fob_key }}</td>
-            <td>
-                <span style="font-size: small">{{ fob.expire_timestamp }}</span><br />
-                <span style="font-size: small">({{ fob.expire_timestamp|format_datetime }})</span>
-            </td>
-            <td> {{ fob.expire_timestamp | has_expired_str }}</td>
-            <td>
-                <form action="/fob/delete" method="POST">
-                    <input type="hidden" name="fob_key" value={{fob.fob_key}} />
-                    <input type='submit' value='Delete' />
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-        <tr>
-            <form action="/fob/add" method="POST">
-                <td>
-                    <input type='text' name='username' placeholder="user display name" />
-                </td>
-                <td>
-                    <input type='text' name='fob_key' placeholder="0000001234" />
-                </td>
-                <td>
-                    <input type='text' name='expire_timestamp' placeholder="epoch timestamp" />
-                </td>
-                <td></td>
-                <td>
-                    <input type='submit' value='Add' />
-                </td>
-            </form>
-        </tr>
-    </table>
-    <br />
-    <form action="/logout" method="POST">
-        <input type='submit' value='Logout' />
-    </form>
+  <table>
+    <tr>
+      <th>Name</th>
+      <th>Fob ID</th>
+      <th>Expire Timestamp</th>
+      <th>Expired</th>
+    </tr>
+    {% for fob in fobs %}
+    <tr>
+      <td>{{ fob.name }}</td>
+      <td>{{ fob.fob_key }}</td>
+      <td>
+        <span style="font-size: small">{{ fob.expire_timestamp }}</span><br />
+        <span style="font-size: small"
+          >({{ fob.expire_timestamp|format_datetime }})</span
+        >
+      </td>
+      <td>{{ fob.expire_timestamp | has_expired_str }}</td>
+      <td>
+        <form action="/fob/delete" method="POST">
+          <input type="hidden" name="fob_key" value="{{fob.fob_key}}" />
+          <input type="submit" value="Delete" />
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <form action="/fob/add" method="POST">
+        <td>
+          <input type="text" name="username" placeholder="user display name" />
+        </td>
+        <td>
+          <input type="text" name="fob_key" placeholder="0000001234" />
+        </td>
+        <td>
+          <input
+            type="text"
+            name="expire_timestamp"
+            placeholder="epoch timestamp"
+          />
+        </td>
+        <td></td>
+        <td>
+          <input type="submit" value="Add" />
+        </td>
+      </form>
+    </tr>
+  </table>
+  {% if fob_id_exists %}
+  <br />
+  Error: Fob ID {{ supplied_fob_id }} already exists
+  <br />
+  <br />
+  {% else %}
+  <br />
+  {% endif %}
+  <form action="/logout" method="POST">
+    <input type="submit" value="Logout" />
+  </form>
 </div>
 {% endblock %}

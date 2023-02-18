@@ -1,9 +1,10 @@
+import os
 import re
 import time
 
 from datetime import datetime
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
+from flask import Flask, session, render_template, request, jsonify, redirect, url_for, make_response
 from flask_jwt_extended import JWTManager, create_access_token, verify_jwt_in_request, set_access_cookies, jwt_required, unset_jwt_cookies
 from flask_sqlalchemy import SQLAlchemy
 
@@ -86,6 +87,12 @@ def add_fob():
 
     # Remove all non-word characters
     fob_key = re.sub(r"[^\w\s]", '', fob_key)
+
+    # See if the fob already exists
+    fob_exists = Fob.query.filter_by(fob_key=str(fob_key)).first()
+    if fob_exists is not None:
+        return redirect(url_for('.home', supplied_fob_id=fob_key, fob_id_exists=True))
+    
     fob = Fob(name=username, fob_key=fob_key,
               expire_timestamp=expire_timestamp)
     db.session.add(fob)
@@ -140,7 +147,7 @@ def home():
         return redirect(url_for('login'))
     verify_jwt_in_request()
     fobs = Fob.query.all()
-    return render_template('fob-list.html', fobs=fobs)
+    return render_template('fob-list.html', fobs=fobs, **request.args)
 
 
 @jwt.expired_token_loader
@@ -152,6 +159,9 @@ def my_expired_token_callback(jwt_header, jwt_payload):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run()
-    # When not running in prod
-    # app.run(host='0.0.0.0', port=8080, debug=True)
+
+    if os.environ.get('DEV'):
+        app.run(port=8080, debug=True)
+    else:
+        app.run()
+    
