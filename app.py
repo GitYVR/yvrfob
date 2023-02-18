@@ -104,8 +104,8 @@ def fob_valid(fob_key):
 @app.route('/fob/<fob_key>/update', methods=['POST'])
 @jwt_required()
 def modify_fob(fob_key):
-    username = request.form.get('username', None)
-    expire_timestamp = request.form.get('expire_timestamp', None)
+    username = request.json.get('username', None)
+    expire_timestamp = request.json.get('expire_timestamp', None)
 
     fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
     if fob is None:
