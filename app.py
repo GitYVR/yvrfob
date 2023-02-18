@@ -11,6 +11,10 @@ from flask_sqlalchemy import SQLAlchemy
 from yvrfob.auth import authenticate
 from yvrfob.secrets import SECRET_KEY
 
+"""
+Flask Configuration, should probably break this up into
+smaller files, but that sounds like a job for the future
+"""
 # Using flask so we can host a webpage AND an API at the same time easily
 
 # Flask app
@@ -21,6 +25,17 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///yvrfob.sqlite3'
 app.config['JWT_SECRET_KEY'] = SECRET_KEY
 app.config['JWT_COOKIE_CSRF_PROTECT'] = False  # Already have JWT enabled lol
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+
+# JWT
+jwt = JWTManager(app)
+
+# Simple ORM
+db = SQLAlchemy(app)
+
+
+"""
+Templating - Extending Jinja2
+"""
 
 
 # Templating
@@ -39,13 +54,6 @@ def has_expired_str(value):
     return 'Yes' if has_expired(value) else 'No'
 
 
-# JWT
-jwt = JWTManager(app)
-
-# Simple ORM
-db = SQLAlchemy(app)
-
-
 class Fob(db.Model):
     """
     Fob database object
@@ -54,6 +62,11 @@ class Fob(db.Model):
     name = db.Column(db.String(100))
     fob_key = db.Column(db.String(32), unique=True)
     expire_timestamp = db.Column(db.Integer)
+
+
+"""
+REST APIs
+"""
 
 
 @app.route('/fob/user', methods=['GET'])
@@ -76,6 +89,35 @@ def fob_valid():
     return jsonify({'valid': True})
 
 
+@app.route('/fob/<fob_key>/update', methods=['POST'])
+@jwt_required()
+def modify_fob(fob_key):
+    username = request.form.get('username', None)
+    expire_timestamp = request.form.get('expire_timestamp', None)
+
+    fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
+    if fob is None:
+        return jsonify({'error': 'fob_key ' + fob_key + ' not found'})
+
+    try:
+        int(expire_timestamp)
+    except:
+        return jsonify({'error': 'expire_timestamp needs to be an integer'}), 401
+
+    if username is not None:
+        fob.name = username
+    if expire_timestamp is not None:
+        fob.expire_timestamp = int(expire_timestamp)
+
+    db.session.commit()
+    return jsonify({'success': 'fob_key ' + fob_key + ' updated'})
+
+
+"""
+Rendered Views
+"""
+
+
 @app.route('/fob/add', methods=['POST'])
 @jwt_required()
 def add_fob():
@@ -84,7 +126,7 @@ def add_fob():
     expire_timestamp = request.form.get('expire_timestamp', None)
 
     if (username == '' or username is None or fob_key is None or fob_key == '' or expire_timestamp is None or expire_timestamp == ''):
-        return jsonify({'error': 'Expecting fields username, fod_id and expire_timestamp'}), 401
+        return jsonify({'error': 'Expecting fields username, fob_key and expire_timestamp'}), 401
 
     # Remove all non-word characters
     fob_key = re.sub(r"[^\w\s]", '', fob_key)
@@ -92,7 +134,7 @@ def add_fob():
     # See if the fob already exists
     fob_exists = Fob.query.filter_by(fob_key=str(fob_key)).first()
     if fob_exists is not None:
-        return redirect(url_for('.home', supplied_fob_id=fob_key, fob_id_exists=True))
+        return redirect(url_for('.home', supplied_fob_key=fob_key, fob_key_exists=True))
 
     fob = Fob(name=username, fob_key=fob_key,
               expire_timestamp=expire_timestamp)
@@ -101,6 +143,7 @@ def add_fob():
     return redirect('/')
 
 
+# uses POST cuz forms only have POST/GET reeee
 @app.route('/fob/delete', methods=['POST'])
 @jwt_required()
 def delete_fob():
@@ -149,6 +192,11 @@ def home():
     verify_jwt_in_request()
     fobs = Fob.query.all()
     return render_template('fob-list.html', fobs=fobs, **request.args)
+
+
+"""
+JWT Token Handling
+"""
 
 # Using an `after_request` callback, we refresh any token that is within 30
 # minutes of expiring. Change the timedeltas to match the needs of your application.

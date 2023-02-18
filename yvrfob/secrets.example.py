@@ -3,9 +3,9 @@ from yvrfob.models import User
 SECRET_KEY = 'SECRET'
 
 # Simple auth yes I know
-USERS = [
+ADMINS = [
     User(1, 'username', 'password')
 ]
 
-USERNAME_TABLE = {u.username: u for u in USERS}
-USERID_TABLE = {u.id: u for u in USERS}
+ADMINNAME_TABLE = {u.username: u for u in ADMINS}
+ADMINID_TABLE = {u.id: u for u in ADMINS}
