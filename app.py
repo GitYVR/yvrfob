@@ -71,6 +71,18 @@ REST APIs
 """
 
 
+@app.route('/auth', methods=['POST'])
+def auth():
+    username = request.json.get("username", None)
+    password = request.json.get("password", None)
+
+    if not authenticate(username, password):
+        return jsonify({'error': 'Bad username or password'}), 401
+
+    access_token = create_access_token(identity=username)
+    return jsonify({'access_token': access_token})
+
+
 @app.route('/fob/<fob_key>/user', methods=['GET'])
 def fob_user(fob_key):
     fob = Fob.query.filter_by(fob_key=fob_key).first()
