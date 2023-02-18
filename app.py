@@ -1,3 +1,6 @@
+import re
+import time
+
 from datetime import datetime
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
@@ -24,6 +27,16 @@ def format_datetime(value):
     return datetime.fromtimestamp(value).strftime("%d/%m/%Y, %H:%M:%S")
 
 
+@app.template_filter()
+def has_expired(value):
+    return datetime.now() > datetime.fromtimestamp(value)
+
+
+@app.template_filter()
+def has_expired_str(value):
+    return 'Yes' if has_expired(value) else 'No'
+
+
 # JWT
 jwt = JWTManager(app)
 
@@ -41,17 +54,40 @@ class Fob(db.Model):
     expire_timestamp = db.Column(db.Integer)
 
 
+@app.route('/fob/user', methods=['GET'])
+def fob_name():
+    fob_key = request.args.get('fob_key')
+    fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
+    if fob is None:
+        return jsonify({'user': None})
+    return jsonify({'user': fob.name})
+
+
+@app.route('/fob/valid', methods=['GET'])
+def fob_valid():
+    fob_key = request.args.get('fob_key')
+    fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
+    if fob is None:
+        return jsonify({'valid': False})
+    if time.time() > fob.expire_timestamp:
+        return jsonify({'valid': False})
+    return jsonify({'valid': True})
+
+
 @app.route('/fob/add', methods=['POST'])
 @jwt_required()
 def add_fob():
     username = request.form.get('username', None)
-    fob_id = request.form.get('fob_id', None)
+    fob_key = request.form.get('fob_key', None)
     expire_timestamp = request.form.get('expire_timestamp', None)
 
-    if (username is None or fob_id is None or expire_timestamp is None):
+    if (username == '' or username is None or fob_key is None or fob_key == '' or expire_timestamp is None or expire_timestamp == ''):
         return jsonify({'error': 'Expecting fields username, fod_id and expire_timestamp'}), 401
 
-    fob = Fob(name=username, fob_key=fob_id, expire_timestamp=expire_timestamp)
+    # Remove all non-word characters
+    fob_key = re.sub(r"[^\w\s]", '', fob_key)
+    fob = Fob(name=username, fob_key=fob_key,
+              expire_timestamp=expire_timestamp)
     db.session.add(fob)
     db.session.commit()
     return redirect('/')
@@ -60,12 +96,12 @@ def add_fob():
 @app.route('/fob/delete', methods=['POST'])
 @jwt_required()
 def delete_fob():
-    fob_id = request.form.get('fob_key', None)
+    fob_key = request.form.get('fob_key', None)
 
-    if fob_id is None:
+    if fob_key is None:
         return jsonify({'error': 'Expecting field fob_key'}), 401
 
-    fob = db.session.query(Fob).filter(Fob.fob_key == fob_id).first()
+    fob = Fob.query.filter_by(fob_key=fob_key).first()
     db.session.delete(fob)
     db.session.commit()
     return redirect('/')

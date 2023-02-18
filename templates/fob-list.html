@@ -5,16 +5,18 @@
         <tr>
             <th>Name</th>
             <th>Fob ID</th>
-            <th>Expires</th>
+            <th>Expire Timestamp</th>
+            <th>Expired</th>
         </tr>
         {% for fob in fobs %}
         <tr>
             <td>{{ fob.name }}</td>
             <td>{{ fob.fob_key }}</td>
             <td>
-                {{ fob.expire_timestamp }}<br/>
+                <span style="font-size: small">{{ fob.expire_timestamp }}</span><br />
                 <span style="font-size: small">({{ fob.expire_timestamp|format_datetime }})</span>
             </td>
+            <td> {{ fob.expire_timestamp | has_expired_str }}</td>
             <td>
                 <form action="/fob/delete" method="POST">
                     <input type="hidden" name="fob_key" value={{fob.fob_key}} />
@@ -29,11 +31,12 @@
                     <input type='text' name='username' placeholder="user display name" />
                 </td>
                 <td>
-                    <input type='text' name='fob_id' placeholder="0000001234" />
+                    <input type='text' name='fob_key' placeholder="0000001234" />
                 </td>
                 <td>
                     <input type='text' name='expire_timestamp' placeholder="epoch timestamp" />
                 </td>
+                <td></td>
                 <td>
                     <input type='submit' value='Add' />
                 </td>
