@@ -71,18 +71,16 @@ REST APIs
 """
 
 
-@app.route('/fob/user', methods=['GET'])
-def fob_user():
-    fob_key = request.args.get('fob_key')
-    fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
+@app.route('/fob/<fob_key>/user', methods=['GET'])
+def fob_user(fob_key):
+    fob = Fob.query.filter_by(fob_key=fob_key).first()
     if fob is None:
         return jsonify({'name': None, 'expire_timestamp': None})
     return jsonify({'name': fob.name, 'expire_timestamp': fob.expire_timestamp})
 
 
-@app.route('/fob/valid', methods=['GET'])
-def fob_valid():
-    fob_key = request.args.get('fob_key')
+@app.route('/fob/<fob_key>/valid', methods=['GET'])
+def fob_valid(fob_key):
     fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
     if fob is None:
         return jsonify({'valid': False})
