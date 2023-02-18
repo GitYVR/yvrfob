@@ -4,6 +4,7 @@ import time
 
 from datetime import timedelta, timezone, datetime
 
+from flask_cors import CORS
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
 from flask_jwt_extended import JWTManager, create_access_token, verify_jwt_in_request, set_access_cookies, jwt_required, unset_jwt_cookies, get_jwt, get_jwt_identity
 from flask_sqlalchemy import SQLAlchemy
@@ -19,6 +20,7 @@ smaller files, but that sounds like a job for the future
 
 # Flask app
 app = Flask(__name__)
+CORS(app)
 
 app.config["JWT_TOKEN_LOCATION"] = ["headers", "cookies"]
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///yvrfob.sqlite3'
