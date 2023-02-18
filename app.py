@@ -2,10 +2,10 @@ import os
 import re
 import time
 
-from datetime import datetime
+from datetime import timedelta, timezone, datetime
 
-from flask import Flask, session, render_template, request, jsonify, redirect, url_for, make_response
-from flask_jwt_extended import JWTManager, create_access_token, verify_jwt_in_request, set_access_cookies, jwt_required, unset_jwt_cookies
+from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
+from flask_jwt_extended import JWTManager, create_access_token, verify_jwt_in_request, set_access_cookies, jwt_required, unset_jwt_cookies, get_jwt, get_jwt_identity
 from flask_sqlalchemy import SQLAlchemy
 
 from yvrfob.auth import authenticate
@@ -20,6 +20,7 @@ app.config["JWT_TOKEN_LOCATION"] = ["headers", "cookies"]
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///yvrfob.sqlite3'
 app.config['JWT_SECRET_KEY'] = SECRET_KEY
 app.config['JWT_COOKIE_CSRF_PROTECT'] = False  # Already have JWT enabled lol
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
 
 
 # Templating
@@ -56,12 +57,12 @@ class Fob(db.Model):
 
 
 @app.route('/fob/user', methods=['GET'])
-def fob_name():
+def fob_user():
     fob_key = request.args.get('fob_key')
     fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
     if fob is None:
-        return jsonify({'user': None})
-    return jsonify({'user': fob.name})
+        return jsonify({'name': None, 'expire_timestamp': None})
+    return jsonify({'name': fob.name, 'expire_timestamp': fob.expire_timestamp})
 
 
 @app.route('/fob/valid', methods=['GET'])
@@ -92,7 +93,7 @@ def add_fob():
     fob_exists = Fob.query.filter_by(fob_key=str(fob_key)).first()
     if fob_exists is not None:
         return redirect(url_for('.home', supplied_fob_id=fob_key, fob_id_exists=True))
-    
+
     fob = Fob(name=username, fob_key=fob_key,
               expire_timestamp=expire_timestamp)
     db.session.add(fob)
@@ -149,9 +150,27 @@ def home():
     fobs = Fob.query.all()
     return render_template('fob-list.html', fobs=fobs, **request.args)
 
+# Using an `after_request` callback, we refresh any token that is within 30
+# minutes of expiring. Change the timedeltas to match the needs of your application.
+
+
+@app.after_request
+def refresh_expiring_jwts(response):
+    try:
+        exp_timestamp = get_jwt()["exp"]
+        now = datetime.now(timezone.utc)
+        target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+        if target_timestamp > exp_timestamp:
+            access_token = create_access_token(identity=get_jwt_identity())
+            set_access_cookies(response, access_token)
+        return response
+    except (RuntimeError, KeyError):
+        # Case where there is not a valid JWT. Just return the original response
+        return response
+
 
 @jwt.expired_token_loader
-def my_expired_token_callback(jwt_header, jwt_payload):
+def force_login_on_token_expire(jwt_header, jwt_payload):
     return redirect('/login')
 
 
@@ -164,4 +183,3 @@ if __name__ == '__main__':
         app.run(port=8080, debug=True)
     else:
         app.run()
-    
