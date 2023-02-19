@@ -1,49 +1,57 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="shortcut icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+    />
+    <title>DCTRL FOB Management</title>
+    <style type="text/css">
+      body {
+        margin: 40px auto;
+        max-width: 800px;
+        line-height: 1.6;
+        font-size: 18px;
+        color: #444;
+        padding: 0 10px;
+      }
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-  <title>DCTRL FOB Management</title>
-  <style type="text/css">
-    body {
-      margin: 40px auto;
-      max-width: 800px;
-      line-height: 1.6;
-      font-size: 18px;
-      color: #444;
-      padding: 0 10px;
-    }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.2;
+      }
 
-    h1,
-    h2,
-    h3 {
-      line-height: 1.2;
-    }
+      table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+      }
 
-    table {
-      font-family: arial, sans-serif;
-      border-collapse: collapse;
-      width: 100%;
-    }
+      td,
+      th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
 
-    td,
-    th {
-      border: 1px solid #dddddd;
-      text-align: left;
-      padding: 8px;
-    }
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+    </style>
+    <script src="{{ url_for('static', filename='jquery-3.6.3.min.js') }}"></script>
+  </head>
 
-    tr:nth-child(even) {
-      background-color: #dddddd;
-    }
-  </style>
-  <script src="{{ url_for('static', filename='jquery-3.6.3.min.js') }}"></script>
-</head>
-
-<body>
-  {% block content %}{% endblock %}
-</body>
-
+  <body>
+    <p>
+      <span style="font-size: 25px"><a href="/">Home</a></span>
+      &nbsp;&nbsp;
+      <span style="font-size: 25px"><a href="/membership">Membership</a></span>
+      &nbsp;&nbsp;
+      <span style="font-size: 25px"><a href="/dashboard">Dashboard</a></span>
+    </p>
+    {% block content %}{% endblock %}
+  </body>
 </html>

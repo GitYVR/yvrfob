@@ -1,0 +1,16 @@
+{% extends 'template.html' %} {% block content %}
+<form action="/new" method="POST">
+    <p>
+    <h3>DCTRL New Member</h3>
+    </p>
+    <p>Username: <input type='text' name='username' /></p>
+    <p>FOB Key: <input type='text' name='fob_key' /></p>
+    <p><input type='submit' value='Add User' /></p>
+</form>
+{% if fob_key_exists %}
+<p>FOB {{ supplied_fob_key }} already exists</p>
+{% endif %}
+{% if new_user %}
+<p>User {{ username }} added (fob key: {{ fob_key }})</p>
+{% endif %}
+{% endblock %}

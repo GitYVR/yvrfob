@@ -126,7 +126,8 @@ def modify_fob(fob_key):
 
 
 """
-Rendered Views
+Rendered views, yes I know, probably can clean these up...
+But alas...
 """
 
 
@@ -146,13 +147,13 @@ def add_fob():
     # See if the fob already exists
     fob_exists = Fob.query.filter_by(fob_key=str(fob_key)).first()
     if fob_exists is not None:
-        return redirect(url_for('.home', supplied_fob_key=fob_key, fob_key_exists=True))
+        return redirect(url_for('.dashboard', supplied_fob_key=fob_key, fob_key_exists=True))
 
     fob = Fob(name=username, fob_key=fob_key,
               expire_timestamp=expire_timestamp)
     db.session.add(fob)
     db.session.commit()
-    return redirect('/')
+    return redirect('/dashboard')
 
 
 # uses POST cuz forms only have POST/GET reeee
@@ -167,7 +168,7 @@ def delete_fob():
     fob = Fob.query.filter_by(fob_key=fob_key).first()
     db.session.delete(fob)
     db.session.commit()
-    return redirect('/')
+    return redirect('/dashboard')
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -196,14 +197,61 @@ def logout():
     return response
 
 
-@app.route('/')
-def home():
+@app.route('/dashboard')
+def dashboard():
     access_token_cookie = request.cookies.get('access_token_cookie', None)
     if access_token_cookie is None:
         return redirect(url_for('login'))
     verify_jwt_in_request()
     fobs = Fob.query.all()
-    return render_template('fob-list.html', fobs=fobs, **request.args)
+    return render_template('dashboard.html', fobs=fobs, **request.args)
+
+
+@app.route('/new', methods=["POST"])
+def new_user():
+    username = request.form.get('username', None)
+    fob_key = request.form.get('fob_key', None)
+    expire_timestamp = int(datetime.now().timestamp())
+
+    if (username == '' or username is None or fob_key is None or fob_key == '' or expire_timestamp is None or expire_timestamp == ''):
+        return jsonify({'error': 'Expecting fields username, fob_key'}), 401
+
+    # Remove all non-word characters
+    fob_key = re.sub(r"[^\w\s]", '', fob_key)
+
+    # See if the fob already exists
+    fob_exists = Fob.query.filter_by(fob_key=str(fob_key)).first()
+    if fob_exists is not None:
+        return redirect(url_for('.home', supplied_fob_key=fob_key, fob_key_exists=True))
+
+    fob = Fob(name=username, fob_key=fob_key,
+              expire_timestamp=expire_timestamp)
+    db.session.add(fob)
+    db.session.commit()
+    return redirect(url_for('.home', username=username, new_user=True, fob_key=fob_key))
+
+
+@app.route('/membership', methods=["POST", "GET"])
+def membership():
+    if request.method == 'POST':
+        fob_key = request.form.get('fob_key', None)
+
+        # See if the fob exists
+        fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
+
+        # Not exist
+        if fob is None:
+            return render_template('membership.html', fob_key=fob_key, fob_key_not_found=True)
+
+        cur_timestamp = int(datetime.now().timestamp())
+        return render_template('membership.html', username=fob.name, expired=fob.expire_timestamp < cur_timestamp, expire_timestamp=fob.expire_timestamp, fob_key=fob_key, fob_key_found=True)
+
+    return render_template('membership.html', **request.args)
+
+
+@app.route('/')
+def home():
+    return render_template('index.html', **request.args)
 
 
 """
