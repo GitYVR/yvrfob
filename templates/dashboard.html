@@ -22,6 +22,8 @@
       <th>Fob ID</th>
       <th>Expire Timestamp</th>
       <th>Expired</th>
+      <th></th>
+      <th></th>
     </tr>
     <tr>
       <form action="/add" method="POST">
@@ -58,12 +60,12 @@
         <td>{{ fob.expire_timestamp | has_expired_str }}</td>
         <td><input type="submit" value="Update" /></td>
       </form>
-      <td>
-        <form action="/delete" method="POST">
+      <form action="/delete" method="POST">
+        <td>
           <input type="hidden" name="fob_key" value="{{fob.fob_key}}" />
           <input type="submit" value="Delete" />
-        </form>
-      </td>
+        </td>
+      </form>
     </tr>
     {% endfor %}
   </table>
