@@ -131,7 +131,7 @@ But alas...
 """
 
 
-@app.route('/fob/add', methods=['POST'])
+@app.route('/add', methods=['POST'])
 @jwt_required()
 def add_fob():
     username = request.form.get('username', None)
@@ -153,11 +153,31 @@ def add_fob():
               expire_timestamp=expire_timestamp)
     db.session.add(fob)
     db.session.commit()
-    return redirect('/dashboard')
-
+    return redirect(url_for('.dashboard', fob_key_added=True, fob_key=fob_key))
 
 # uses POST cuz forms only have POST/GET reeee
-@app.route('/fob/delete', methods=['POST'])
+
+
+@app.route('/update', methods=['POST'])
+@jwt_required()
+def update_fob():
+    fob_key = request.form.get('fob_key', None)
+    expire_timestamp = request.form.get('expire_timestamp', None)
+    username = request.form.get('name', None)
+
+    if fob_key is None or expire_timestamp is None or username is None:
+        return jsonify({'error': 'Expecting field fob_key, expiry_time, and username'}), 401
+
+    fob = Fob.query.filter_by(fob_key=fob_key).first()
+    fob.name = username
+    fob.expire_timestamp = expire_timestamp
+    db.session.commit()
+    return redirect(url_for('.dashboard', fob_key_updated=True, fob_key=fob_key))
+
+# uses POST cuz forms only have POST/GET reeee
+
+
+@app.route('/delete', methods=['POST'])
 @jwt_required()
 def delete_fob():
     fob_key = request.form.get('fob_key', None)

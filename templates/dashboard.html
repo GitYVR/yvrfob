@@ -1,6 +1,21 @@
 {% extends 'template.html' %} {% block content %}
 <h3>DCTRL FOB Dashboard</h3>
 <div>
+  {% if fob_key_exists %}
+  Error: Fob ID {{ supplied_fob_key }} already exists
+  <br />
+  <br />
+  {% endif %}
+  {% if fob_key_added %}
+  Success: Fob ID {{ fob_key }} added
+  <br />
+  <br />
+  {% endif %}
+  {% if fob_key_updated %}
+  Success: Fob ID {{ fob_key }} updated
+  <br />
+  <br />
+  {% endif %}
   <table>
     <tr>
       <th>Name</th>
@@ -8,27 +23,8 @@
       <th>Expire Timestamp</th>
       <th>Expired</th>
     </tr>
-    {% for fob in fobs %}
     <tr>
-      <td>{{ fob.name }}</td>
-      <td>{{ fob.fob_key }}</td>
-      <td>
-        <span style="font-size: small">{{ fob.expire_timestamp }}</span><br />
-        <span style="font-size: small"
-          >({{ fob.expire_timestamp|format_datetime }})</span
-        >
-      </td>
-      <td>{{ fob.expire_timestamp | has_expired_str }}</td>
-      <td>
-        <form action="/fob/delete" method="POST">
-          <input type="hidden" name="fob_key" value="{{fob.fob_key}}" />
-          <input type="submit" value="Delete" />
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-    <tr>
-      <form action="/fob/add" method="POST">
+      <form action="/add" method="POST">
         <td>
           <input type="text" name="username" placeholder="user display name" />
         </td>
@@ -36,29 +32,59 @@
           <input type="text" name="fob_key" placeholder="0000001234" />
         </td>
         <td>
-          <input
-            type="text"
-            name="expire_timestamp"
-            placeholder="epoch timestamp"
-          />
+          <input type="text" name="expire_timestamp" placeholder="epoch timestamp" />
         </td>
+        <td></td>
         <td></td>
         <td>
           <input type="submit" value="Add" />
         </td>
       </form>
     </tr>
+    {% for fob in fobs %}
+    <tr>
+      <form action="/update" method="POST">
+        <td><input name="name" value="{{fob.name}}" /></td>
+        <td>
+          <input type="hidden" name="fob_key" value="{{fob.fob_key}}" />
+          {{ fob.fob_key }}
+        </td>
+        <td>
+          <input id="input-datetime-{{fob.fob_key}}" name="expire_timestamp" value="{{fob.expire_timestamp}}"
+            onkeyup="updateSpanDatetime('{{fob.fob_key}}',this.value)" /><br />
+          <span id="span-datetime-{{fob.fob_key}}" style="font-size: small">({{ fob.expire_timestamp|format_datetime
+            }})</span>
+        </td>
+        <td>{{ fob.expire_timestamp | has_expired_str }}</td>
+        <td><input type="submit" value="Update" /></td>
+      </form>
+      <td>
+        <form action="/delete" method="POST">
+          <input type="hidden" name="fob_key" value="{{fob.fob_key}}" />
+          <input type="submit" value="Delete" />
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
   </table>
-  {% if fob_key_exists %}
-  <br />
-  Error: Fob ID {{ supplied_fob_key }} already exists
-  <br />
-  <br />
-  {% else %}
-  <br />
-  {% endif %}
   <form action="/logout" method="POST">
     <input type="submit" value="Logout" />
   </form>
 </div>
+<script type="text/javascript">
+  $(document).ready(function () {
+
+  });
+
+  var regex = /\d+/;
+  function updateSpanDatetime(fob_key, value) {
+    var numbersOnly = regex.exec(value);
+    if (numbersOnly === null) {
+      return;
+    }
+    document.getElementById('input-datetime-' + fob_key).value = numbersOnly[0];
+    var readableDatetime = new Date(parseInt(numbersOnly[0]) * 1000).toLocaleString()
+    document.getElementById('span-datetime-' + fob_key).textContent = readableDatetime;
+  }
+</script>
 {% endblock %}
