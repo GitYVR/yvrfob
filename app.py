@@ -4,6 +4,7 @@ import time
 
 from datetime import timedelta, timezone, datetime
 
+from flask_wtf.csrf import CSRFProtect
 from flask_cors import CORS
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
 from flask_jwt_extended import JWTManager, create_access_token, verify_jwt_in_request, set_access_cookies, jwt_required, unset_jwt_cookies, get_jwt, get_jwt_identity
@@ -20,18 +21,26 @@ smaller files, but that sounds like a job for the future
 
 # Flask app
 app = Flask(__name__)
-CORS(app)
+csrf = CSRFProtect()
 
 app.config["JWT_TOKEN_LOCATION"] = ["headers", "cookies"]
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///yvrfob.sqlite3'
 app.config['JWT_SECRET_KEY'] = SECRET_KEY
-app.config['JWT_COOKIE_CSRF_PROTECT'] = False  # Already have JWT enabled lol
+app.config['JWT_COOKIE_CSRF_PROTECT'] = False  # No need to mix CSRF and JWT
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+app.config['WTF_CSRF_CHECK_DEFAULT'] = False # Selectively enable CSRF protection
+app.config['SECRET_KEY'] = SECRET_KEY
 
-# JWT
+# CORS for frontend apps
+CORS(app)
+
+# CSRF for form
+csrf.init_app(app)
+
+# JWT For REST based AUTH
 jwt = JWTManager(app)
 
-# Simple ORM
+# Database ORM
 db = SQLAlchemy(app)
 
 
@@ -52,8 +61,8 @@ def has_expired(value):
 
 
 @app.template_filter()
-def has_expired_str(value):
-    return 'Yes' if has_expired(value) else 'No'
+def is_membership_active(value):
+    return 'No' if has_expired(value) else 'Yes'
 
 
 class Fob(db.Model):
@@ -229,6 +238,8 @@ def dashboard():
 
 @app.route('/new', methods=["POST"])
 def new_user():
+    csrf.protect()
+
     username = request.form.get('username', None)
     fob_key = request.form.get('fob_key', None)
     expire_timestamp = int(datetime.now().timestamp())

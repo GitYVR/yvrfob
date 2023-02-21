@@ -21,7 +21,7 @@
       <th>Name</th>
       <th>Fob ID</th>
       <th>Expire Timestamp</th>
-      <th>Expired</th>
+      <th>Membership Active</th>
       <th></th>
       <th></th>
     </tr>
@@ -34,7 +34,9 @@
           <input type="text" name="fob_key" placeholder="0000001234" />
         </td>
         <td>
-          <input type="text" name="expire_timestamp" placeholder="epoch timestamp" />
+          <input id="input-datetime-new-user" type="text" name="expire_timestamp" placeholder="epoch timestamp"
+            onkeyup="updateSpanDatetime('new-user',this.value)" /><br />
+          <span id="span-datetime-new-user" style="font-size: small"></span>
         </td>
         <td></td>
         <td></td>
@@ -45,7 +47,7 @@
     </tr>
     {% for fob in fobs %}
     <tr>
-      <form action="/update" method="POST">
+      <form onsubmit="return confirm('Update {{fob.fob_key}} ({{fob.name}})?');" action="/update" method="POST">
         <td><input name="name" value="{{fob.name}}" /></td>
         <td>
           <input type="hidden" name="fob_key" value="{{fob.fob_key}}" />
@@ -57,10 +59,10 @@
           <span id="span-datetime-{{fob.fob_key}}" style="font-size: small">({{ fob.expire_timestamp|format_datetime
             }})</span>
         </td>
-        <td>{{ fob.expire_timestamp | has_expired_str }}</td>
+        <td>{{ fob.expire_timestamp | is_membership_active }}</td>
         <td><input type="submit" value="Update" /></td>
       </form>
-      <form action="/delete" method="POST">
+      <form onsubmit="return confirm('Confirm delete {{fob.fob_key}} ({{fob.name}})?');" action="/delete" method="POST">
         <td>
           <input type="hidden" name="fob_key" value="{{fob.fob_key}}" />
           <input type="submit" value="Delete" />
@@ -69,7 +71,7 @@
     </tr>
     {% endfor %}
   </table>
-  <form action="/logout" method="POST">
+  <form onsubmit="return confirm('Do you really want to logout?');" action="/logout" method="POST">
     <input type="submit" value="Logout" />
   </form>
 </div>

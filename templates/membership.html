@@ -5,21 +5,23 @@
     </p>
     <p>FOB Key: <input type='text' name='fob_key' /></p>
     <p><input type='submit' value='Check' /></p>
+    <input type="hidden" name="csrf_token" value="{{csrf_token()}}"/>
 </form>
 {% if fob_key_not_found == True %}
 <p>FOB {{ fob_key }} not found</p>
 {% endif %}
 
 {% if fob_key_found == True %}
-Membership - {% if expired == True %} <span style="color: red">Inactive</span> {% else %}<span style="color: green">Active</span> {% endif %}<br/>
-FOB - {{ fob_key }}<br/>
-User - {{ username }}<br/>
+Membership - {% if expired == True %} <span style="color: red">Inactive</span> {% else %}<span
+    style="color: green">Active</span> {% endif %}<br />
+FOB - {{ fob_key }}<br />
+User - {{ username }}<br />
 {% if expired == True %}
 Expired
 {% else %}
 Expires
 {% endif %}
- - {{ expire_timestamp|format_datetime }}
+- {{ expire_timestamp|format_datetime }}
 <br/>
 {% endif %}
 {% endblock %}
