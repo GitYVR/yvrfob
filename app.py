@@ -13,6 +13,8 @@ from flask_sqlalchemy import SQLAlchemy
 from yvrfob.auth import authenticate
 from yvrfob.secrets import SECRET_KEY
 
+from covalent import CovalentClient
+
 """
 Flask Configuration, should probably break this up into
 smaller files, but that sounds like a job for the future
@@ -100,14 +102,42 @@ def fob_user(fob_key):
     return jsonify({'name': fob.name, 'expire_timestamp': fob.expire_timestamp})
 
 
+# TEST_ONLY, REMOVE BEFORE CHECKING
+# boolean to use FobNFT or not
+g_shouldUseCovalent = False
+
 @app.route('/fob/<fob_key>/valid', methods=['GET'])
 def fob_valid(fob_key):
-    fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
-    if fob is None:
-        return jsonify({'valid': False})
-    if time.time() > fob.expire_timestamp:
-        return jsonify({'valid': False})
-    return jsonify({'valid': True})
+    if g_shouldUseCovalent:
+        c = CovalentClient("cqt_rQKqPkgW7VWgbrbCqcPpXCyHF3D7")
+        # probably remove use_uncached in prod
+        b = c.nft_service.get_nft_metadata_for_given_token_id_for_contract("optimism-sepolia","0x93f6A58CeB439fbe8DDa84B5E02e334aaF6024c4", fob_key, with_uncached=True)
+
+        if b.error:
+            # call to covalent failed.
+            return jsonify({'valid': False})
+
+        try:
+            # token_url is empty if tokenId doesn't exist
+            expirationTime = float(b.data.items[0].nft_data.token_url)
+        except ValueError:
+            return jsonify({'valid': False})
+
+        # Get current time in UNIX timestamp
+        currentTime = time.time() 
+
+        # Compare fob_key expirationTime to currentTime
+        if expirationTime < currentTime:
+            return jsonify({'valid': False})
+        else:
+            return jsonify({'valid': True})
+    else:
+        fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
+        if fob is None:
+            return jsonify({'valid': False})
+        if time.time() > fob.expire_timestamp:
+            return jsonify({'valid': False})
+        return jsonify({'valid': True})
 
 
 @app.route('/fob/<fob_key>/update', methods=['POST'])
