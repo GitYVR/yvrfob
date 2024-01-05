@@ -14,6 +14,8 @@ from yvrfob.auth import authenticate
 from yvrfob.secrets import SECRET_KEY
 
 from covalent import CovalentClient
+from Crypto.Hash import keccak
+from decimal import Decimal
 
 """
 Flask Configuration, should probably break this up into
@@ -104,15 +106,30 @@ def fob_user(fob_key):
 
 # TEST_ONLY, REMOVE BEFORE CHECKING
 # boolean to use FobNFT or not
-g_shouldUseCovalent = False
+g_shouldUseCovalent = True
+
+# Takes the input and returns the keccak256 hash of it
+# expects input to be an int
+def keccak_hash(input):
+    keccak_hasher = keccak.new(digest_bits=256)
+
+    # Convert input to hex and remove the 0x prefix
+    number_hex = hex(int(input))[2:] 
+
+    # Pad with a leading zero if necessary
+    if len(number_hex) % 2 != 0:
+        number_hex = '0' + number_hex
+
+    keccak_hasher.update(bytes.fromhex(number_hex))
+    return int(keccak_hasher.hexdigest(),16)
 
 @app.route('/fob/<fob_key>/valid', methods=['GET'])
 def fob_valid(fob_key):
     if g_shouldUseCovalent:
+        hashed_fob_key = keccak_hash(fob_key)
         c = CovalentClient("cqt_rQKqPkgW7VWgbrbCqcPpXCyHF3D7")
         # probably remove use_uncached in prod
-        b = c.nft_service.get_nft_metadata_for_given_token_id_for_contract("optimism-sepolia","0x93f6A58CeB439fbe8DDa84B5E02e334aaF6024c4", fob_key, with_uncached=True)
-
+        b = c.nft_service.get_nft_metadata_for_given_token_id_for_contract("eth-sepolia","0x58375d0df233c70533ba307e3c5c3b4f52d58b43", hashed_fob_key, with_uncached=True, no_metadata=False)
         if b.error:
             # call to covalent failed.
             return jsonify({'valid': False})
