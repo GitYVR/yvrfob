@@ -27,5 +27,3 @@ gunicorn --bind 0.0.0.0:8080 --chdir $(pwd) app:app
 Fob management is moving onchain: https://github.com/ori-wagmi/DCTRLMEMBERSHIP
 
 YVRFOB uses Covalent to read the expiration date of the given fob_key. 
-
-Currently, you must manually set `g_shouldUseCovalent - app.py::107` to enable this feature.
