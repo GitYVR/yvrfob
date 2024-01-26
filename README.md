@@ -27,3 +27,9 @@ gunicorn --bind 0.0.0.0:8080 --chdir $(pwd) app:app
 Fob management is moving onchain: https://github.com/ori-wagmi/DCTRLMEMBERSHIP
 
 YVRFOB uses Covalent to read the expiration date of the given fob_key. 
+
+## Deploying to door
+This app is hosted on the server rack inside DCTRL. The code is locased in `/home/dctrl/.yvrfob/yvrfob`.
+There is a systemd service `yvrfob.service` that runs on launch and supervises this app.
+
+To deploy to prod, update the code in `/home/dctrl/.yvrfob/yvrfob` and reboot `yvrfob.service`.
