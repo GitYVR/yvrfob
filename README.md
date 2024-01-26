@@ -29,9 +29,3 @@ Fob management is moving onchain: https://github.com/ori-wagmi/DCTRLMEMBERSHIP
 YVRFOB uses Covalent to read the expiration date of the given fob_key. 
 
 Currently, you must manually set `g_shouldUseCovalent - app.py::107` to enable this feature.
-
-ToDo:
-1. Hide or make a public API key
-2. Update endpoint to production smart contract
-3. Remove `g_shouldUseCovalent`
-4. Investigate what else in this project needs to be migrated
