@@ -13,6 +13,8 @@ from flask_sqlalchemy import SQLAlchemy
 from yvrfob.auth import authenticate
 from yvrfob.secrets import SECRET_KEY
 
+from covalent import CovalentClient
+
 """
 Flask Configuration, should probably break this up into
 smaller files, but that sounds like a job for the future
@@ -99,15 +101,51 @@ def fob_user(fob_key):
         return jsonify({'name': None, 'expire_timestamp': None})
     return jsonify({'name': fob.name, 'expire_timestamp': fob.expire_timestamp})
 
+LARGEPRIME = int(69420420420420)
+
+def encrypt_number(number):
+    number_int = int(number)
+    return (number_int * LARGEPRIME)
+
+def checkCovalent(fob_key):
+    hashed_fob_key = encrypt_number(fob_key)
+    print(hashed_fob_key)
+    c = CovalentClient("cqt_rQKqPkgW7VWgbrbCqcPpXCyHF3D7")
+    # probably remove use_uncached in prod
+    b = c.nft_service.get_nft_metadata_for_given_token_id_for_contract("eth-sepolia","0x880505222ccAd5E03221005839F12d32B7F4B2EF", hashed_fob_key, with_uncached=True, no_metadata=False)
+    if b.error:
+        # call to covalent failed.
+        return jsonify({'valid': False})
+
+    try:
+        # token_url is empty if tokenId doesn't exist
+        expirationTime = float(b.data.items[0].nft_data.token_url)
+    except ValueError:
+        return jsonify({'valid': False})
+
+    # Get current time in UNIX timestamp
+    currentTime = time.time() 
+
+    # Compare fob_key expirationTime to currentTime
+    if expirationTime < currentTime:
+        return jsonify({'valid': False})
+    else:
+        return jsonify({'valid': True})
 
 @app.route('/fob/<fob_key>/valid', methods=['GET'])
 def fob_valid(fob_key):
-    fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
-    if fob is None:
-        return jsonify({'valid': False})
-    if time.time() > fob.expire_timestamp:
-        return jsonify({'valid': False})
-    return jsonify({'valid': True})
+    isValid = checkCovalent(fob_key)
+
+    if isValid.json['valid'] == True:
+        return jsonify({'valid': True})
+    else:
+        fob = Fob.query.filter_by(fob_key=str(fob_key)).first()
+        if fob is None:
+            return jsonify({'valid': False})
+        if time.time() > fob.expire_timestamp:
+            return jsonify({'valid': False})
+        return jsonify({'valid': True})
+
 
 
 @app.route('/fob/<fob_key>/update', methods=['POST'])
